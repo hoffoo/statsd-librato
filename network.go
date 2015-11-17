@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"io"
 	"log"
 	"net"
@@ -36,28 +37,16 @@ func listenTcp() {
 
 func handleTcpConn(conn net.Conn) {
 	defer conn.Close()
+	scanner := bufio.NewScanner(conn)
 
-	msg := make([]byte, 0)
-	tmp := make([]byte, 8192)
-
-	for {
-		n, err := conn.Read(tmp)
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-
-			log.Printf("unable to read from tcp: %s\n", err)
-			return
-		}
-		msg = append(msg, tmp[0:n]...)
+	for scanner.Scan() {
+		handle(scanner.Text())
 	}
 
-	if *debug {
-		log.Printf("received %d bytes from tcp %s:\n%s\n", len(msg), conn.RemoteAddr(), string(msg))
+	if err := scanner.Err(); err != nil {
+		log.Printf("unable to read from tcp: %s\n", err)
+		return
 	}
-
-	handle(string(msg))
 }
 
 func listenUdp() {
